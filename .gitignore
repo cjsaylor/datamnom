@@ -1,3 +1,8 @@
 .vagrant/
 cookbooks/
 tmp/
+node_modules
+
+inbound
+
+!.gitkeep

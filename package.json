@@ -1,0 +1,24 @@
+{
+  "name": "datamnom",
+  "version": "0.0.1",
+  "description": "Generic data ingestion for Elasticsearch to be visualized by Kibana.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cjsaylor/datamnom.git"
+  },
+  "keywords": [
+    "elasticsearch",
+    "bigdata",
+    "kibana"
+  ],
+  "author": "Chris Saylor <cjsaylor@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cjsaylor/datamnom/issues"
+  },
+  "homepage": "https://github.com/cjsaylor/datamnom"
+}
