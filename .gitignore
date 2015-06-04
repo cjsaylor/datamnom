@@ -3,6 +3,6 @@ cookbooks/
 tmp/
 node_modules
 
-inbound
+inbound/*
 
 !.gitkeep
