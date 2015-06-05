@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/cjsaylor/datamnom/issues"
   },
-  "homepage": "https://github.com/cjsaylor/datamnom"
+  "homepage": "https://github.com/cjsaylor/datamnom",
+  "dependencies": {
+    "elasticsearch": "^4.1.0"
+  }
 }
