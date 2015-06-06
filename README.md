@@ -38,8 +38,7 @@ __`http://datamnom.dev:5601/` Not connecting__
 * You may need to edit your `/etc/hosts` to `33.33.0.75 datamnom.dev`
 
 __Kibana is working but it's asking for index__
-* replace `logstash-*` with `flvendors`
-* Time-field name `date`
+* replace `logstash-*` with the index specific to the dataset import.  See the [wiki](../../wiki) for specific use-cases.
 
 __Kibana is working but I see `No Results Found`__
 * top-right corner, change time frame from `Last 15 minutes` to a larger time scale
