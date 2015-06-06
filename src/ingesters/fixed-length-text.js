@@ -23,7 +23,7 @@ var fieldMap = {
 	contact_phone: [265, 276],
 	object_code: [287, 292],
 	object_description: [294, 341],
-	amount: [344, 356]
+	amount: [344, 357]
 };
 
 function FixedLengthIngestor () {
