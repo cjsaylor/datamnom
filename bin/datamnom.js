@@ -4,7 +4,8 @@ var util = require('util');
 var writable = require('stream').Writable;
 var elasticsearch = require('elasticsearch');
 var client = new elasticsearch.Client({
-	host: 'datamnom.dev:9200'
+	host: 'datamnom.dev:9200',
+	apiVersion: '1.4'
 });
 
 var inbound = fs.createReadStream(path.normalize(__dirname + '/../inbound/FY2014.txt'));
@@ -15,6 +16,41 @@ var injestion = function() {
 }
 
 util.inherits(injestion, writable);
+
+injestion.prototype._write = function(chunk, encoding, next) {
+	if (typeof encoding === 'function') {
+		next = encoding;
+	}
+	this.buffer += chunk.toString();
+	var records = this.buffer.split('\r\n');
+	var last = records.pop();
+	if (last.length < fixLength) {
+		this.buffer = last;
+	} else {
+		records.push(last);
+	}
+	var bulk = [];
+	records
+		.map(function(record) {
+			var entry = {};
+			for (key in fieldMap) {
+				entry[key] = record.substring(fieldMap[key][0], fieldMap[key][1]).trim();
+			}
+			return entry;
+		})
+		.forEach(function(entry) {
+			bulk.push({create: { _index: 'flvendors', _type: 'vendorTransaction'}});
+			bulk.push(entry);
+		});
+	client.bulk({body: bulk}, function(err, res, status) {
+		if (err) {
+			console.trace(err);
+			return;
+		}
+		next();
+	});
+};
+
 
 var fieldMap = {
 	year: [0, 4],
@@ -53,55 +89,44 @@ var typeMap = {
 			state: {type: 'string', index: 'not_analyzed'},
 			zip: {type: 'string', index: 'not_analyzed'},
 			payment_account: {type: 'integer'},
-			pay_agency: {type: 'string', 'not_analyzed'},
+			pay_agency: {type: 'string', index: 'not_analyzed'},
 			state_document_no: {type: 'string', index: 'not_analyzed'},
 			payment_no: {type: 'string', index: 'not_analyzed'},
 			date: {type: 'date'},
 			agency_document_no: {type: 'string', index: 'not_analyzed'},
 			contact_phone: {type: 'string', index: 'not_analyzed'},
 			object_code: {type: 'string', index: 'not_analyzed'},
-			object_description: {type: 'string', 'not_analyzed'},
+			object_description: {type: 'string', index: 'not_analyzed'},
 			amount: {type: 'float'}
 		}
 	}
 }
 
-injestion.prototype._write = function(chunk, encoding, next) {
-	if (typeof encoding === 'function') {
-		next = encoding;
-	}
-	this.buffer += chunk.toString();
-	var records = this.buffer.split('\r\n');
-	var last = records.pop();
-	if (last.length < fixLength) {
-		this.buffer = last;
-	} else {
-		records.push(last);
-	}
-	var bulk = [];
-	records
-		.map(function(record) {
-			var entry = {};
-			for (key in fieldMap) {
-				entry[key] = record.substring(fieldMap[key][0], fieldMap[key][1]).trim();
-			}
-			return entry;
-		})
-		.forEach(function(entry) {
-			bulk.push({create: { _index: 'flvendors', _type: 'vendorTransaction'}});
-			bulk.push(entry);
-		});
-	client.bulk({body: bulk}, function(err, res, status) {
-		if (err) {
-			console.trace(err);
-			return;
-		}
-		next();
-	});
-};
-
 var outbound = new injestion();
 
 outbound.on('error', console.error);
 
-inbound.pipe(outbound);
+client.indices.get({index: 'flvendors'})
+	.catch(function() {
+		return client.indices.create({index: 'flvendors'});
+	})
+	.then(function() {
+		return client.indices.getMapping({index: 'flvendors', type: 'vendorTransaction'});
+	})
+	.then(function(mapping) {
+		if (!Object.keys(mapping).length) {
+			throw new Error('No mapping.');
+		}
+	})
+	.catch(function() {
+		return client.indices.putMapping({
+			index: 'flvendors',
+			type: 'vendorTransaction',
+			body: typeMap
+		});
+	})
+	.then(function() {
+		inbound.pipe(outbound);
+	})
+	.catch(console.error)
+	.done();
