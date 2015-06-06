@@ -1,4 +1,6 @@
 var client = require('../client');
+var Ingestor = require('../Ingestor');
+var _ = require('lodash');
 var writable = require('stream').Writable;
 var util = require('util');
 var fixLength = 358;
@@ -24,14 +26,15 @@ var fieldMap = {
 	amount: [344, 356]
 };
 
-var ingestion = function() {
-	writable.apply(this, arguments);
-	this.buffer = '';
+function FixedLengthIngestor () {
+	Ingestor.apply(this, arguments)
 }
 
-util.inherits(ingestion, writable);
+FixedLengthIngestor.prototype = _.create(Ingestor.prototype, {
+	constructor: FixedLengthIngestor
+})
 
-ingestion.prototype._write = function(chunk, encoding, next) {
+FixedLengthIngestor.prototype._write = function(chunk, encoding, next) {
 	if (typeof encoding === 'function') {
 		next = encoding;
 	}
@@ -65,4 +68,4 @@ ingestion.prototype._write = function(chunk, encoding, next) {
 	});
 };
 
-module.exports = ingestion;
+module.exports = FixedLengthIngestor;
