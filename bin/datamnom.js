@@ -1,7 +1,7 @@
 var path = require('path');
 var fs = require('fs');
 var client = require('../src/client');
-var injestion = require('../src/ingesters/fixed-length-text');
+var FixedLengthIngestor = require('../src/ingesters/fixed-length-text');
 
 var inbound = fs.createReadStream(path.normalize(__dirname + '/../inbound/FY2013.txt'));
 
@@ -31,7 +31,7 @@ var typeMap = {
 	}
 }
 
-var outbound = new injestion();
+var outbound = new FixedLengthIngestor();
 
 outbound.on('error', console.error);
 
