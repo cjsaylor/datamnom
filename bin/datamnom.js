@@ -8,12 +8,7 @@ var ProgressBar = require('progress');
 var ProgressStream = require('../src/Progress');
 var FixedLengthIngestor = require('../src/ingesters/fixed-length-text');
 var config = require(path.normalize(__dirname + '/../inbound/FY2013.json'));
-var destination = new FixedLengthIngestor();
 var esConfig = config.destinations.elasticsearch;
-
-destination.on('error', function (e) {
-	console.error(e.stack);
-});
 
 var totalProgressGoal = _.keys(config.sources).length * 100
 
@@ -38,6 +33,13 @@ _.forEach(config.sources, function(ingestOptions, filename) {
 	var sourcePath = path.normalize(__dirname + '/../inbound/' + filename);
 	var source = fs.createReadStream(sourcePath);
 	var fileInfo = fs.statSync(sourcePath);
+	var destination = new FixedLengthIngestor();
+
+	destination.setOptions(esConfig, ingestOptions);
+
+	destination.on('error', function (e) {
+		console.error(e.stack);
+	});
 
 	var progressTracker = ProgressStream.createProgressStream(fileInfo.size);
 	progressTracker.onprogress = _.throttle(function () {
@@ -50,8 +52,7 @@ _.forEach(config.sources, function(ingestOptions, filename) {
 			return client.indices.create({index: esConfig.index});
 		})
 		.then(function() {
-			// @todo type is still hardcoded
-			return client.indices.getMapping({index: esConfig.index, type: 'vendorTransaction'});
+			return client.indices.getMapping({index: esConfig.index, type: esConfig.defaultType});
 		})
 		.then(function(mapping) {
 			if (!Object.keys(mapping).length) {
@@ -61,8 +62,7 @@ _.forEach(config.sources, function(ingestOptions, filename) {
 		.catch(function() {
 			return client.indices.putMapping({
 				index: esConfig.index,
-				// @todo type is still hardcoded
-				type: 'vendorTransaction',
+				type: esConfig.defaultType,
 				body: esConfig.types
 			});
 		})
