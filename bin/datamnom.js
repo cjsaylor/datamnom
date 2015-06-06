@@ -1,6 +1,8 @@
 var path = require('path');
 var fs = require('fs');
+var _ = require('lodash');
 var client = require('../src/client');
+var ProgressBar = require('progress');
 var FixedLengthIngestor = require('../src/ingesters/fixed-length-text');
 var config = require(path.normalize(__dirname + '/../inbound/FY2013.json'));
 var destination = new FixedLengthIngestor();
@@ -8,7 +10,6 @@ var _ = require('lodash');
 var esConfig = config.destinations.elasticsearch;
 
 destination.on('error', console.error);
-
 
 _.forEach(config.sources, function(ingestOptions, filename) {
 	var source = fs.createReadStream(path.normalize(__dirname + '/../inbound/' + filename));
