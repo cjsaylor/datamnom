@@ -11,7 +11,7 @@ var client = new elasticsearch.Client({
 var inbound = fs.createReadStream(path.normalize(__dirname + '/../inbound/FY2014.txt'));
 
 var injestion = function() {
-	writable.apply(this, [].slice.call(arguments));
+	writable.apply(this, arguments);
 	this.buffer = '';
 }
 
