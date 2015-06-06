@@ -15,21 +15,34 @@ destination.on('error', function (e) {
 	console.error(e.stack);
 });
 
+var totalProgressGoal = _.keys(config.sources).length * 100
+
+var progressBar = new ProgressBar('ingesting... [:bar] :percent', {
+	complete: '=',
+	incomplete: ' ',
+	width: 30,
+	total: totalProgressGoal
+});
+
+var progresses = {};
+
+function calculateTotalProgress () {
+	var total = 0;
+	_.forIn(progresses, function (percentComplete) {
+		total += percentComplete;
+	});
+	progressBar.update(total / totalProgressGoal);
+}
+
 _.forEach(config.sources, function(ingestOptions, filename) {
 	var sourcePath = path.normalize(__dirname + '/../inbound/' + filename);
 	var source = fs.createReadStream(sourcePath);
 	var fileInfo = fs.statSync(sourcePath);
 
-	var progressBar = new ProgressBar('ingesting(' + filename + ')... [:bar] :percent', {
-		complete: '=',
-		incomplete: ' ',
-		width: 30,
-		total: fileInfo.size
-	});
-
 	var progressTracker = ProgressStream.createProgressStream(fileInfo.size);
 	progressTracker.onprogress = _.throttle(function () {
-		progressBar.update(this.progress / 100);
+		progresses[filename] = this.progress;
+		calculateTotalProgress();
 	}, 50);
 
 	client.indices.get({index: esConfig.index})
