@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/cjsaylor/datamnom",
   "dependencies": {
-    "elasticsearch": "^4.1.0"
+    "elasticsearch": "^4.1.0",
+    "lodash": "^3.9.3"
   }
 }
