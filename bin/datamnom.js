@@ -71,6 +71,5 @@ _.forEach(config.sources, function(ingestOptions, filename) {
 		})
 		.catch(function (e) {
 			console.error(e.stack);
-		})
-		.done();
+		});
 });
