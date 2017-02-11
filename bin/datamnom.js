@@ -3,73 +3,57 @@
 var path = require('path');
 var fs = require('fs');
 var _ = require('lodash');
+const co = require('co');
+const P = require('bluebird');
+const glob = P.promisify(require('glob'));
+const junk = require('junk');
 var client = require('../src/client');
 var ProgressBar = require('progress');
 var ProgressStream = require('../src/Progress');
-var FixedLengthIngestor = require('../src/ingesters/fixed-length-text');
-var config = require(path.normalize(__dirname + '/../inbound/FY2013.json'));
-var esConfig = config.destinations.elasticsearch;
 
-var totalProgressGoal = _.keys(config.sources).length * 100
-
-var progressBar = new ProgressBar('ingesting... [:bar] :percent', {
-	complete: '=',
-	incomplete: ' ',
-	width: 30,
-	total: totalProgressGoal
-});
-
-var progresses = {};
-
-function calculateTotalProgress () {
-	var total = 0;
-	_.forIn(progresses, function (percentComplete) {
-		total += percentComplete;
-	});
-	progressBar.update(total / totalProgressGoal);
-}
-
-_.forEach(config.sources, function(ingestOptions, filename) {
-	var sourcePath = path.normalize(__dirname + '/../inbound/' + filename);
-	var source = fs.createReadStream(sourcePath);
-	var fileInfo = fs.statSync(sourcePath);
-	var destination = new FixedLengthIngestor();
-
-	destination.setOptions(esConfig, ingestOptions);
-
-	destination.on('error', function (e) {
-		console.error(e.stack);
-	});
-
-	var progressTracker = ProgressStream.createProgressStream(fileInfo.size);
-	progressTracker.onprogress = _.throttle(function () {
-		progresses[filename] = this.progress;
-		calculateTotalProgress();
-	}, 50);
-
-	client.indices.get({index: esConfig.index})
-		.catch(function() {
-			return client.indices.create({index: esConfig.index});
-		})
-		.then(function() {
-			return client.indices.getMapping({index: esConfig.index, type: esConfig.defaultType});
-		})
-		.then(function(mapping) {
-			if (!Object.keys(mapping).length) {
-				throw new Error('No mapping.');
-			}
-		})
-		.catch(function() {
-			return client.indices.putMapping({
-				index: esConfig.index,
-				type: esConfig.defaultType,
-				body: esConfig.types
+co(function*() {
+	const files = yield glob(__dirname + '/../inbound/*.json');
+	files.filter(junk.not).forEach(configFile => {
+		const config = require(configFile);
+		const esConfig = config.destinations.elasticsearch;
+		_.forEach(config.sources, (ingestOptions) => {
+			const progressBar = new ProgressBar(`Injesting ${ingestOptions.name} ... [:bar] :percent ETA - :eta`, {
+				width: 30,
+				total: 100
 			});
-		})
-		.then(function() {
-			return source.pipe(progressTracker).pipe(destination);
-		})
-		.catch(function (e) {
-			console.error(e.stack);
+			const IngestorClass = require(`${__dirname}/../src/ingesters/${ingestOptions.ingestor}.js`);
+			const injestor = new IngestorClass(esConfig, ingestOptions);
+			injestor.on('error', e => console.error(e.stack));
+			// @todo have the injestor return a read stream instead of assuming files
+			// This would make it flexible to allow for other sources such as mysql or mongo
+			const sourcePath = path.normalize(`${__dirname}/../inbound/${ingestOptions.inputFile}`);
+			const source = fs.createReadStream(sourcePath);
+			co(function*() {
+				try {
+					yield client.indices.get({index: esConfig.index});
+				} catch (e) {
+					yield client.indices.create({index: esConfig.index});
+				}
+				const mapping = yield client.indices.getMapping({
+					index: esConfig.index,
+					type: esConfig.defaultType
+				});
+				if (!Object.keys(mapping).length) {
+					yield client.indices.putMapping({
+						index: esConfig.index,
+						type: esConfig.defaultType,
+						body: esConfig.types
+					});
+				}
+				// @todo possibly have the ingestor provide a progress stream.
+				const fileInfo = fs.statSync(sourcePath);
+				const progress = ProgressStream.createProgressStream(fileInfo.size);
+				progress.onprogress = _.throttle(function() {
+					progressBar.update(this.progress / 100);
+				}, 250);
+				source.pipe(progress).pipe(injestor);
+			});
 		});
-});
+	});
+})
+.catch(e => console.error(e));
