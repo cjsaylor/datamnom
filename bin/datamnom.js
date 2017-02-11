@@ -1,15 +1,15 @@
 'use strict';
 
-var path = require('path');
-var fs = require('fs');
-var _ = require('lodash');
+const path = require('path');
+const fs = require('fs');
+const _ = require('lodash');
 const co = require('co');
 const P = require('bluebird');
 const glob = P.promisify(require('glob'));
 const junk = require('junk');
-var client = require('../src/client');
-var ProgressBar = require('progress');
-var ProgressStream = require('../src/Progress');
+const client = require('../src/client');
+const ProgressBar = require('progress');
+const ProgressStream = require('../src/Progress');
 
 co(function*() {
 	const files = yield glob(__dirname + '/../inbound/*.json');
