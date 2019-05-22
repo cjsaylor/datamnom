@@ -1,7 +1,6 @@
 'use strict';
 
 const client = require('../client');
-const Ingestor = require('../Ingestor');
 const _ = require('lodash');
 const {Writable} = require('stream');
 
@@ -38,7 +37,7 @@ class FixedLengthIngestor extends Writable {
 			})
 			.forEach(entry => {
 				// @todo configure an "ID" field
-				bulk.push({create: { _index: this.esConfig.index, _type: this.esConfig.defaultType, _id: this.id++}});
+				bulk.push({index: { _index: this.esConfig.index, _id: this.id++}});
 				bulk.push(entry);
 			});
 		client.bulk({body: bulk}, function(err, res, status) {

@@ -12,21 +12,20 @@ Originally created for a local [Hack for Change event](https://medium.com/zumba-
 
 Elasticsearch serves as both a generic search tool, but it also functions as an API through
 Elasticsearch's rest interface while simultaneously supplying an aggregation and visualization framework
-through Kibana and Timelion.
+through Kibana (among other tools).
 
 ## Requirements
 
-* Docker `1.8+`
-* NodeJS `6.0+`
+* NodeJS `10+`
 
 ## Install
 
 * `docker-compose up -d`
 * `npm install`
 
-## Use
+## Usage
 
-* Access locally: http://localhost:5601/.
-* Add `json` configuration to `inbound/`, see [`FY2013.json`](https://github.com/cjsaylor/datamnom/wiki/Florida-Vendor-Data) for an example.
-* Copy  into `inbound/` folder and run `node bin/datamnom.js` to import into Elasticsearch.
-* See [the wiki](../../wiki) for specific use-cases.
+1. `docker-compose up -d` (if you don't already have elasticsearch running locally)
+2. Create a configuration file (see [examples](examples/)).
+3. Run `node bin/datamnom.js --config=/path/to/config/from/step/1 --files=/glob/path/to/files`
+4. Open http://localhost:5601 to see your data imported
