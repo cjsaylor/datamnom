@@ -58,6 +58,7 @@ class GPXIngestor extends Writable {
 			.reduce((acc, cur, i) => {
 				if (!i) {
 					cur.distance = 0.0
+					cur.speed = 0.0
 					acc.push(cur)
 					return acc
 				}
@@ -73,6 +74,8 @@ class GPXIngestor extends Writable {
 					null,
 					2
 				)
+				// Speed in m/s
+				cur.speed = cur.distance / ((new Date(cur.timestamp) - new Date(acc[i-1].timestamp)) / 1000)
 				return [...acc, cur]
 			}, [])
 			.reduce((prev, cur) => ([

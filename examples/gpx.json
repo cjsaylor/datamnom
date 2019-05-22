@@ -11,6 +11,7 @@
 					"timestamp": { "type" : "date" },
 					"elevation": { "type" : "integer" },
 					"distance": { "type" : "double" },
+					"speed": { "type" : "double" },
 					"hr": { "type" : "integer" }
 				}
 			}
