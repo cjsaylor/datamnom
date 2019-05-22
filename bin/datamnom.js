@@ -1,59 +1,66 @@
 'use strict';
 
-const path = require('path');
 const fs = require('fs');
-const _ = require('lodash');
-const co = require('co');
-const P = require('bluebird');
-const glob = P.promisify(require('glob'));
+const path = require('path');
+
+const minimist = require('minimist')
 const junk = require('junk');
+const _ = require('lodash');
 const client = require('../src/client');
 const ProgressBar = require('progress');
 const ProgressStream = require('../src/Progress');
 
-co(function*() {
-	const files = yield glob(__dirname + '/../inbound/*.json');
-	files.filter(junk.not).forEach(configFile => {
-		const config = require(configFile);
-		const esConfig = config.destinations.elasticsearch;
-		_.forEach(config.sources, (ingestOptions) => {
-			const progressBar = new ProgressBar(`Injesting ${ingestOptions.name} ... [:bar] :percent ETA - :eta`, {
-				width: 30,
-				total: 100
-			});
-			const IngestorClass = require(`${__dirname}/../src/ingesters/${ingestOptions.ingestor}.js`);
-			const injestor = new IngestorClass(esConfig, ingestOptions);
-			injestor.on('error', e => console.error(e.stack));
-			// @todo have the injestor return a read stream instead of assuming files
-			// This would make it flexible to allow for other sources such as mysql or mongo
-			const sourcePath = path.normalize(`${__dirname}/../inbound/${ingestOptions.inputFile}`);
-			const source = fs.createReadStream(sourcePath);
-			co(function*() {
-				try {
-					yield client.indices.get({index: esConfig.index});
-				} catch (e) {
-					yield client.indices.create({index: esConfig.index});
-				}
-				const mapping = yield client.indices.getMapping({
-					index: esConfig.index,
-					type: esConfig.defaultType
-				});
-				if (!Object.keys(mapping).length) {
-					yield client.indices.putMapping({
-						index: esConfig.index,
-						type: esConfig.defaultType,
-						body: esConfig.types
-					});
-				}
-				// @todo possibly have the ingestor provide a progress stream.
-				const fileInfo = fs.statSync(sourcePath);
-				const progress = ProgressStream.createProgressStream(fileInfo.size);
-				progress.onprogress = _.throttle(function() {
-					progressBar.update(this.progress / 100);
-				}, 250);
-				source.pipe(progress).pipe(injestor);
-			});
+const globCB = require('glob')
+const glob = function(path) {
+	return new Promise((res, rej) => {
+		globCB(path, (err, matches) => {
+			if (err) {
+				rej(err)
+				return
+			}
+			res(matches)
+		})
+	})
+}
+
+async function main() {
+	const argv = minimist(process.argv.slice(2))
+	const config = require(path.normalize(`${process.cwd()}/${argv.config}`))
+	const ingestorClass = require(`${__dirname}/../src/ingesters/${config.ingestor.class}.js`)
+	const files = await glob(argv.files)
+	try {
+		await client.indices.get({
+			index: config.destinations.elasticsearch.index
 		});
-	});
-})
-.catch(e => console.error(e));
+	} catch (e) {
+		await client.indices.create({
+			index: config.destinations.elasticsearch.index
+		});
+	}
+	try {
+		await client.indices.putMapping({
+			index: config.destinations.elasticsearch.index,
+			body: config.destinations.elasticsearch.types,
+		})
+	} catch (e) {
+		console.trace(e)
+	}
+	files.filter(junk.not).forEach(file => {
+		const ingestor = new ingestorClass(config.destinations.elasticsearch, {
+			title: path.basename(file, path.extname(file))
+		})
+		ingestor.on('error', e => console.error(e.stack))
+		const fileInfo = fs.statSync(file);
+		const source = fs.createReadStream(file)
+		const progressBar = new ProgressBar(`Ingesting ${path.basename(file)} ... [:bar] :percent ETA - :eta`, {
+			width: 30,
+			total: 100,
+		})
+		const progress = new ProgressStream(fileInfo.size, _.throttle(progress => {
+			progressBar.update(progress)
+		}))
+		source.pipe(progress).pipe(ingestor);
+	})
+}
+
+main()
