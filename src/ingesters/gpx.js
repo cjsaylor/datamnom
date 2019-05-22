@@ -1,7 +1,7 @@
 'use strict'
 
 const client = require('../client')
-const { haversine } = require('../geo')
+const { getDistance } = require('geolib')
 const { Writable } = require('stream')
 const { parseString } = require('xml2js')
 const { chunk } = require('lodash')
@@ -54,15 +54,24 @@ class GPXIngestor extends Writable {
 				}
 				return entry
 			})
+			// Calculate distance and speed between datapoints
 			.reduce((acc, cur, i) => {
 				if (!i) {
 					cur.distance = 0.0
 					acc.push(cur)
 					return acc
 				}
-				cur.distance = haversine(
-					[acc[i - 1].location.lat, acc[i - 1].location.lon],
-					[cur.location.lat, cur.location.lon]
+				cur.distance = getDistance(
+					{
+						latitude: acc[i - 1].location.lat,
+						longitude: acc[i - 1].location.lon,
+					},
+					{
+						latitude: cur.location.lat,
+						longitude: cur.location.lon,
+					},
+					null,
+					2
 				)
 				return [...acc, cur]
 			}, [])
