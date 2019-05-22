@@ -1,0 +1,18 @@
+{
+	"ingestor" : {
+		"class" : "gpx"
+	},
+	"destinations" : {
+		"elasticsearch" : {
+			"index" : "running",
+			"types" : {
+				"properties": {
+					"location": { "type" : "geo_point" },
+					"timestamp": { "type" : "date" },
+					"elevation": { "type" : "integer" },
+					"hr": { "type" : "integer" }
+				}
+			}
+		}
+	}
+}
