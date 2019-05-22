@@ -1,6 +1,7 @@
 'use strict'
 
 const client = require('../client')
+const { haversine } = require('../geo')
 const { Writable } = require('stream')
 const { parseString } = require('xml2js')
 const { chunk } = require('lodash')
@@ -53,6 +54,18 @@ class GPXIngestor extends Writable {
 				}
 				return entry
 			})
+			.reduce((acc, cur, i) => {
+				if (!i) {
+					cur.distance = 0.0
+					acc.push(cur)
+					return acc
+				}
+				cur.distance = haversine(
+					[acc[i - 1].location.lat, acc[i - 1].location.lon],
+					[cur.location.lat, cur.location.lon]
+				)
+				return [...acc, cur]
+			}, [])
 			.reduce((prev, cur) => ([
 				...prev,
 				{
