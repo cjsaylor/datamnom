@@ -91,7 +91,7 @@ class GPXIngestor extends Writable {
 		try {
 			await Promise.all(
 				chunk(operations, 1000)
-					.map(bulk => client.bulk({body: operations}))
+					.map(bulk => client.bulk({body: bulk}))
 			)
 			next()
 		} catch (e) {
