@@ -1,12 +1,11 @@
 'use strict'
 
-const { Writable } = require('stream')
-
+const FileImporter = require('../fileImporter')
 const csvParse = require('neat-csv')
 const client = require('../client')
 const crypto = require('crypto');
 
-class CSVIngestor extends Writable {
+class CSVImporter extends FileImporter {
 	constructor(esConfig, fileOptions) {
 		super()
 		this.fileOptions = fileOptions
@@ -48,4 +47,4 @@ class CSVIngestor extends Writable {
 	}
 }
 
-module.exports = CSVIngestor
+module.exports = CSVImporter

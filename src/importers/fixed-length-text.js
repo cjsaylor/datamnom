@@ -2,9 +2,9 @@
 
 const client = require('../client');
 const _ = require('lodash');
-const {Writable} = require('stream');
+const FileImporter = require('../fileImporter')
 
-class FixedLengthIngestor extends Writable {
+class FixedLengthImporter extends FileImporter {
 	constructor(esConfig, fileOptions) {
 		super();
 		this.buffer = '';
@@ -50,4 +50,4 @@ class FixedLengthIngestor extends Writable {
 	}
 };
 
-module.exports = FixedLengthIngestor;
+module.exports = FixedLengthImporter;

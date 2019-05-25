@@ -2,11 +2,11 @@
 
 const client = require('../client')
 const { getDistance } = require('geolib')
-const { Writable } = require('stream')
+const FileImporter = require('../fileImporter')
 const { parseString } = require('xml2js')
 const { chunk } = require('lodash')
 
-class GPXIngestor extends Writable {
+class GPXImporter extends FileImporter {
 	constructor(esConfig, fileOptions) {
 		super()
 		this.buffer = ''
@@ -100,4 +100,4 @@ class GPXIngestor extends Writable {
 	}
 }
 
-module.exports = GPXIngestor
+module.exports = GPXImporter
