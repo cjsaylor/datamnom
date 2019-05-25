@@ -47,6 +47,7 @@ async function main() {
 	}
 	files.filter(junk.not).forEach(file => {
 		const ingestor = new ingestorClass(config.destinations.elasticsearch, {
+			...config.ingestor,
 			title: path.basename(file, path.extname(file))
 		})
 		ingestor.on('error', e => console.error(e.stack))
