@@ -30,6 +30,10 @@ async function main() {
 		console.trace(e)
 	}
 	// @todo when other input options are available, this will need to become dynamic
+	if (!importerClass.getStreams) {
+		console.error('Importer must implement a static `getStreams` method.')
+		return
+	}
 	const streams = await importerClass.getStreams(argv.files, config.destinations.elasticsearch, config.importer)
 	streams.forEach(stream => {
 		const progressBar = new ProgressBar(`Importing ${stream.title} ... [:bar] :percent ETA - :eta`, {
