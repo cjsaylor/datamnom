@@ -3,7 +3,7 @@
 // @see https://waterdata.usgs.gov/nwis/uv?cb_00060=on&cb_00065=on&format=html&site_no=0209734440
 
 module.exports = {
-	"ingestor": {
+	"importer": {
 		"class": "csv",
 		"delimiter": "\t",
 		"headers": [

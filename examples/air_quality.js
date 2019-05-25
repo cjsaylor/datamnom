@@ -3,7 +3,7 @@
 // @see https://www.chapelhillopendata.org/explore/dataset/local-air-quality/information/
 
 module.exports = {
-	"ingestor": {
+	"importer": {
 		"class": "csv",
 		"delimiter": ";",
 		"headers": [

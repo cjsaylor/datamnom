@@ -1,5 +1,5 @@
 {
-	"ingestor" : {
+	"importer" : {
 		"class" : "gpx"
 	},
 	"destinations" : {
