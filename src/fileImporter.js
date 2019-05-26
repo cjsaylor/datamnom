@@ -26,8 +26,11 @@ class FileImporter extends Writable {
 		return files.filter(junk.not).map(file => {
 			const { size } = fs.statSync(file)
 			const inputStream = fs.createReadStream(file)
-			const outputStream = new this(esConfig, fileOptions)
 			const title = path.basename(file, path.extname(file))
+			const outputStream = new this(esConfig, {
+				...fileOptions,
+				title,
+			})
 			return {inputStream, outputStream, size, title}
 		})
 	}
