@@ -22,28 +22,40 @@ class CSVImporter extends FileImporter {
 			return
 		}
 		try {
-			const records = await csvParse(this.buffer, {
-				headers: this.fileOptions.headers,
-				separator: this.fileOptions.delimiter,
-			})
-			const operations = records
-				.map(this.fileOptions.mapper || this.noopMap)
-				.reduce((prev, cur) => ([
-					...prev,
-					{
-						index: {
-							_index: this.esConfig.index,
-							_id: crypto.createHash('md5').update(JSON.stringify(cur)).digest("hex"),
-						}
-					},
-					cur,
-				]), [])
-			await client.bulk({body: operations})
+			this.shipLines(this.buffer)
 			this.buffer = ''
 			next()
 		} catch (e) {
 			console.trace(e)
 		}
+	}
+
+	async _final() {
+		if (this.buffer.length) {
+			this.shipLines(this.buffer)
+		}
+	}
+
+	async shipLines(buffer) {
+		const records = await csvParse(buffer, {
+			headers: this.fileOptions.headers,
+			separator: this.fileOptions.delimiter,
+		})
+		const operations = records
+			.map(this.fileOptions.mapper || this.noopMap)
+			.reduce((prev, cur) => ([
+				...prev,
+				{
+					index: {
+						_index: this.esConfig.index,
+						_id: crypto.createHash('md5').update(JSON.stringify(cur)).digest("hex"),
+					}
+				},
+				cur,
+			]), [])
+		await client.bulk({
+			body: operations
+		})
 	}
 }
 
